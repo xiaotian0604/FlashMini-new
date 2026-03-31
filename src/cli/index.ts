@@ -22,6 +22,8 @@ import { Command } from 'commander'
 import { uploadCommand } from './commands/upload'
 import { initCommand } from './commands/init'
 import { previewCommand } from './commands/preview'
+import { doctorCommand } from './commands/doctor'
+import { planCommand } from './commands/plan'
 
 /**
  * 创建 Commander 程序实例
@@ -66,10 +68,12 @@ program
   .description('上传小程序到指定平台')
   .option('-p, --platform <platforms>', '指定平台，逗号分隔（wechat,alipay）')
   .option('-e, --env <env>', '环境（dev/test/prod）', 'prod')
+  .option('--config <path>', '指定配置文件路径')
   .option('--version <version>', '覆盖配置文件中的版本号')
   .option('--desc <desc>', '覆盖上传备注')
   .option('--no-notify', '禁用上传通知')
   .option('--json', '以 JSON 格式输出结果（CI 场景）')
+  .option('--report <path>', '将结构化报告写入文件')
   .option('--dry-run', '试运行，不实际上传')
   .action(uploadCommand)
 
@@ -116,7 +120,36 @@ program
   .command('preview')
   .description('生成小程序体验版二维码')
   .option('-p, --platform <platform>', '平台（默认 wechat）', 'wechat')
+  .option('-e, --env <env>', '环境（默认 dev）', 'dev')
+  .option('--config <path>', '指定配置文件路径')
   .action(previewCommand)
+
+program
+  .command('plan')
+  .description('输出本次执行计划，不实际上传')
+  .option('-p, --platform <platforms>', '指定平台，逗号分隔（wechat,alipay）')
+  .option('-e, --env <env>', '环境（dev/test/prod）', 'prod')
+  .option('--config <path>', '指定配置文件路径')
+  .option('--version <version>', '覆盖配置文件中的版本号')
+  .option('--desc <desc>', '覆盖上传备注')
+  .option('--no-notify', '禁用上传通知')
+  .option('--json', '以 JSON 格式输出执行计划')
+  .option('--report <path>', '将结构化报告写入文件')
+  .option('--dry-run', '按 dry-run 模式生成执行计划')
+  .action(planCommand)
+
+program
+  .command('doctor')
+  .description('诊断当前配置和运行环境')
+  .option('-p, --platform <platforms>', '指定平台，逗号分隔（wechat,alipay）')
+  .option('-e, --env <env>', '环境（dev/test/prod）', 'prod')
+  .option('--config <path>', '指定配置文件路径')
+  .option('--version <version>', '覆盖配置文件中的版本号')
+  .option('--desc <desc>', '覆盖上传备注')
+  .option('--no-notify', '禁用上传通知')
+  .option('--json', '以 JSON 格式输出诊断结果')
+  .option('--report <path>', '将结构化报告写入文件')
+  .action(doctorCommand)
 
 // ─── 解析命令行参数 ──────────────────────────────────────────────
 

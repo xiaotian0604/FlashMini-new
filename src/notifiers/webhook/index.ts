@@ -13,6 +13,7 @@
  * - {{commit}}     — git commit hash（短）
  * - {{duration}}   — 总耗时（秒）
  * - {{status}}     — 上传状态（success / partial / failed）
+ * - {{mode}}       — 上传模式（real / mock / mixed）
  *
  * @example
  * ```typescript
@@ -102,6 +103,11 @@ export class WebhookNotifier extends BaseNotifier {
       : ctx.successCount > 0
         ? 'partial'
         : 'failed'
+    const mode = ctx.results.every(result => result.mock)
+      ? 'mock'
+      : ctx.results.some(result => result.mock)
+        ? 'mixed'
+        : 'real'
 
     // 构建变量映射表
     const variables: Record<string, string> = {
@@ -113,6 +119,7 @@ export class WebhookNotifier extends BaseNotifier {
       commit: ctx.gitCommit ? ctx.gitCommit.slice(0, 7) : '',
       duration: (ctx.duration / 1000).toFixed(1),
       status,
+      mode,
     }
 
     // 执行替换：将 {{key}} 替换为对应的值

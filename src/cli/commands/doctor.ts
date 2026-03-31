@@ -1,62 +1,52 @@
-/**
- * upload 命令实现
- */
-
-import { Runner } from '../../core/runner'
 import {
   applyExecutionOverrides,
   loadValidatedConfig,
 } from '../../core/config/runtime'
+import { resolveEnabledPlatforms } from '../../core/platform-selection'
+import { resolveDescription, resolveVersion } from '../../utils/env'
 import {
+  buildDoctorReport,
   buildErrorReport,
-  buildUploadReport,
   writeJsonReport,
 } from '../../report/builders'
+import { printDoctorReport } from '../ui/reports'
 import { logger } from '../ui/logger'
-import { startSpinner } from '../ui/spinner'
-import { printSummary } from '../ui/summary'
 
-export interface UploadCommandOptions {
+export interface DoctorCommandOptions {
   platform?: string
   env: string
   version?: string
   desc?: string
   notify: boolean
   json?: boolean
-  dryRun?: boolean
   config?: string
   report?: string
 }
 
-export async function uploadCommand(options: UploadCommandOptions): Promise<void> {
+export async function doctorCommand(options: DoctorCommandOptions): Promise<void> {
   let configPath: string | undefined
-  const spinner = options.json ? null : startSpinner('准备上传...')
 
   try {
     const resolved = await loadValidatedConfig(options.config)
     configPath = resolved.filepath
-    logger.debug(`配置文件路径: ${configPath}`)
 
     const config = applyExecutionOverrides(resolved.config, {
       version: options.version,
       desc: options.desc,
       notify: options.notify,
     })
+    const version = await resolveVersion(config.version)
+    const description = await resolveDescription(config.description)
+    const platforms = resolveEnabledPlatforms(config, options.platform?.split(','))
 
-    const runner = new Runner(config, { configFilepath: configPath })
-    const ctx = await runner.run({
-      env: options.env,
-      platforms: options.platform?.split(','),
-      dryRun: options.dryRun,
-    })
-
-    const report = buildUploadReport({
-      ctx,
+    const report = buildDoctorReport({
+      config,
       configPath,
-      dryRun: options.dryRun,
+      env: options.env,
+      version,
+      description,
+      platforms,
     })
-
-    spinner?.stop()
 
     if (options.report) {
       const reportPath = writeJsonReport(options.report, report)
@@ -68,20 +58,18 @@ export async function uploadCommand(options: UploadCommandOptions): Promise<void
     if (options.json) {
       console.log(JSON.stringify(report, null, 2))
     } else {
-      printSummary(ctx)
+      printDoctorReport(report)
     }
 
-    if (!report.success) {
+    if (report.status === 'fail') {
       process.exit(1)
     }
   } catch (err) {
-    spinner?.fail('上传失败')
+    const errorReport = buildErrorReport('doctor', err, configPath)
 
     if (!options.json) {
-      logger.error(err instanceof Error ? err.message : String(err))
+      logger.error(errorReport.error.message)
     }
-
-    const errorReport = buildErrorReport('upload', err, configPath)
 
     if (options.report) {
       const reportPath = writeJsonReport(options.report, errorReport)

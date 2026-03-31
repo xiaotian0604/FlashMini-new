@@ -32,6 +32,19 @@ export { PlatformName, PLATFORM_DISPLAY_NAMES } from './platform'
 // ─── 插件接口类型 ─────────────────────────────────────────────────
 export type { Plugin, PluginConfig } from './plugin'
 
+// ─── Report 类型 ─────────────────────────────────────────────────
+export type {
+  DoctorCheck,
+  DoctorReport,
+  ErrorReport,
+  NotificationPlanItem,
+  PlanReport,
+  PlatformPlanItem,
+  UploadReport,
+  UploadResultReportItem,
+} from './report'
+export { REPORT_SCHEMA_VERSION } from './report'
+
 // ─── 上下文类型（从核心模块重导出） ──────────────────────────────
 export { Context } from '../core/context'
 

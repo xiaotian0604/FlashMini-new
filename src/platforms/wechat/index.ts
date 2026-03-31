@@ -21,6 +21,12 @@ import { WechatSchema } from './schema'
 import type { Context } from '../../core/context'
 import type { UploadResult } from '../../types/platform'
 import { FlashminiError, ErrorCode } from '../../utils/errors'
+import {
+  hasConfiguredValue,
+  shouldUseMockStrategy,
+  simulatePreview,
+  simulateUpload,
+} from '../mock'
 
 /**
  * 微信小程序上传器
@@ -62,6 +68,18 @@ export class WechatUploader extends BaseUploader {
    * @returns 上传结果对象
    */
   async upload(ctx: Context): Promise<UploadResult> {
+    const mockReason = this.getMockReason(ctx)
+
+    if (mockReason) {
+      return simulateUpload({
+        platform: 'wechat',
+        projectPath: this.wechatConfig.projectPath,
+        reason: mockReason,
+        ctx,
+      })
+    }
+
+    this.assertRealUploadConfig()
     const start = Date.now()
 
     try {
@@ -111,6 +129,19 @@ export class WechatUploader extends BaseUploader {
    * @returns Base64 编码的二维码图片字符串
    */
   async preview(ctx: Context): Promise<string> {
+    const mockReason = this.getMockReason(ctx)
+
+    if (mockReason) {
+      return simulatePreview({
+        platform: 'wechat',
+        projectPath: this.wechatConfig.projectPath,
+        reason: mockReason,
+        ctx,
+      })
+    }
+
+    this.assertRealUploadConfig()
+
     try {
       const ci = await import('miniprogram-ci')
 
@@ -151,5 +182,48 @@ export class WechatUploader extends BaseUploader {
    */
   validateConfig(): void {
     WechatSchema.parse(this.config)
+  }
+
+  private getMockReason(ctx: Context): string | null {
+    const missingFields: string[] = []
+
+    if (!this.isConfiguredWechatAppId()) {
+      missingFields.push('appId')
+    }
+
+    if (!hasConfiguredValue(this.wechatConfig.privateKeyPath)) {
+      missingFields.push('privateKeyPath')
+    }
+
+    return shouldUseMockStrategy({
+      env: ctx.env,
+      explicitMock: this.wechatConfig.mock,
+      missingFields,
+    })
+  }
+
+  private assertRealUploadConfig(): void {
+    const missingFields: string[] = []
+
+    if (!this.isConfiguredWechatAppId()) {
+      missingFields.push('appId')
+    }
+
+    if (!hasConfiguredValue(this.wechatConfig.privateKeyPath)) {
+      missingFields.push('privateKeyPath')
+    }
+
+    if (missingFields.length > 0) {
+      throw new FlashminiError(
+        `微信小程序上传缺少配置: ${missingFields.join(', ')}。dev 环境下可留空自动走模拟上传，或显式配置 mock: true。`,
+        ErrorCode.CONFIG_INVALID,
+        'wechat',
+      )
+    }
+  }
+
+  private isConfiguredWechatAppId(): boolean {
+    const appId = this.wechatConfig.appId.trim()
+    return hasConfiguredValue(appId) && !/^wx_+$/.test(appId)
   }
 }

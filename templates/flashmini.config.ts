@@ -17,12 +17,14 @@ export default defineConfig({
 
   // ─── 平台配置 ────────────────────────────────────────────────
   // 每个平台独立配置，enabled 为 true 时才会上传到该平台
+  // dev 环境下如果缺少真实凭证，会自动降级为模拟上传
   platforms: {
     // 微信小程序
     wechat: {
       enabled: true,
-      appId: 'wx__________',               // 小程序 AppID（在微信公众平台获取）
-      privateKeyPath: './keys/wechat.key', // 上传密钥路径（在微信公众平台下载）
+      mock: false,                         // 强制使用模拟上传
+      appId: '',                           // 小程序 AppID（dev 环境留空会自动走 mock）
+      privateKeyPath: '',                  // 上传密钥路径（dev 环境留空会自动走 mock）
       projectPath: './dist/wechat',        // 构建产物目录
       robot: 1,                            // CI 机器人编号（1-30）
     },
@@ -30,15 +32,18 @@ export default defineConfig({
     // 支付宝小程序
     alipay: {
       enabled: false,
-      appId: '202100000000',               // 支付宝小程序 AppID
+      mock: false,                         // 强制使用模拟上传
+      appId: '',                           // 支付宝小程序 AppID（dev 环境留空会自动走 mock）
       toolId: '',                          // 支付宝开放平台工具 ID
       privateKey: '',                      // 私钥字符串（或使用 privateKeyPath）
+      privateKeyPath: '',                  // 私钥文件路径（dev 环境留空会自动走 mock）
       projectPath: './dist/alipay',
     },
 
     // 百度智能小程序
     baidu: {
       enabled: false,
+      mock: false,                         // 强制使用模拟上传
       token: '',                           // 百度智能小程序上传 token
       projectPath: './dist/baidu',
     },
@@ -46,8 +51,10 @@ export default defineConfig({
     // 字节跳动小程序
     bytedance: {
       enabled: false,
+      mock: false,                         // 强制使用模拟上传
       email: '',                           // 字节跳动开发者邮箱
       password: '',                        // 开发者密码（或使用 token）
+      token: '',                           // 鉴权 token（dev 环境缺失时会自动走 mock）
       projectPath: './dist/bytedance',
     },
   },

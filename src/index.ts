@@ -57,6 +57,17 @@ export type {
 
 export type { UploadResult, PlatformNameType } from './types/platform'
 export type { Plugin, PluginConfig } from './types/plugin'
+export type {
+  DoctorCheck,
+  DoctorReport,
+  ErrorReport,
+  NotificationPlanItem,
+  PlanReport,
+  PlatformPlanItem,
+  UploadReport,
+  UploadResultReportItem,
+} from './types/report'
+export { REPORT_SCHEMA_VERSION } from './types/report'
 
 // ─── 类和工具导出 ────────────────────────────────────────────────
 export { Context } from './core/context'
@@ -66,9 +77,18 @@ export { PlatformFactory } from './platforms/factory'
 export { FlashminiError, ErrorCode } from './utils/errors'
 
 // ─── 核心模块导出 ────────────────────────────────────────────────
-import { loadConfig, loadConfigFromFile } from './core/config/loader'
-import { ConfigSchema } from './core/config/schema'
 import { Runner, type RunOptions } from './core/runner'
+import {
+  applyExecutionOverrides,
+  loadValidatedConfig,
+} from './core/config/runtime'
+import { resolveEnabledPlatforms } from './core/platform-selection'
+import { resolveVersion, resolveDescription } from './utils/env'
+import {
+  buildDoctorReport,
+  buildPlanReport,
+} from './report/builders'
+import type { DoctorReport, PlanReport } from './types/report'
 
 /**
  * Node.js API 调用选项
@@ -80,7 +100,20 @@ export interface UploadApiOptions {
   platforms?: string[]
   /** 运行环境标识 */
   env?: string
+  /** 覆盖版本号 */
+  version?: string
+  /** 覆盖上传备注 */
+  desc?: string
+  /** 是否发送通知（false 时禁用全部通知） */
+  notify?: boolean
   /** 试运行模式 */
+  dryRun?: boolean
+}
+
+export interface DoctorApiOptions extends Omit<UploadApiOptions, 'dryRun'> {}
+
+export interface PlanApiOptions extends Omit<UploadApiOptions, 'dryRun'> {
+  /** 是否按 dry-run 模式生成计划 */
   dryRun?: boolean
 }
 
@@ -112,27 +145,15 @@ export interface UploadApiOptions {
  * ```
  */
 export async function upload(options: UploadApiOptions = {}) {
-  // ─── 加载配置 ──────────────────────────────────────────────────
-  const raw = options.config
-    ? await loadConfigFromFile(options.config)
-    : await loadConfig()
-
-  if (!raw) {
-    throw new Error('未找到配置文件，请先运行 flashmini init 或指定 config 路径')
-  }
-
-  // ─── 校验配置 ──────────────────────────────────────────────────
-  const result = ConfigSchema.safeParse(raw.config)
-
-  if (!result.success) {
-    const errors = result.error.errors
-      .map(e => `${e.path.join('.')}: ${e.message}`)
-      .join('\n')
-    throw new Error(`配置校验失败:\n${errors}`)
-  }
+  const resolved = await loadValidatedConfig(options.config)
+  const config = applyExecutionOverrides(resolved.config, {
+    version: options.version,
+    desc: options.desc,
+    notify: options.notify,
+  })
 
   // ─── 执行上传 ──────────────────────────────────────────────────
-  const runner = new Runner(result.data)
+  const runner = new Runner(config, { configFilepath: resolved.filepath })
   const runOptions: RunOptions = {
     env: options.env || 'prod',
     platforms: options.platforms,
@@ -140,4 +161,49 @@ export async function upload(options: UploadApiOptions = {}) {
   }
 
   return runner.run(runOptions)
+}
+
+export async function plan(options: PlanApiOptions = {}): Promise<PlanReport> {
+  const resolved = await loadValidatedConfig(options.config)
+  const config = applyExecutionOverrides(resolved.config, {
+    version: options.version,
+    desc: options.desc,
+    notify: options.notify,
+  })
+  const env = options.env || 'prod'
+  const version = await resolveVersion(config.version)
+  const description = await resolveDescription(config.description)
+  const platforms = resolveEnabledPlatforms(config, options.platforms)
+
+  return buildPlanReport({
+    config,
+    configPath: resolved.filepath,
+    env,
+    version,
+    description,
+    platforms,
+    dryRun: options.dryRun,
+  })
+}
+
+export async function doctor(options: DoctorApiOptions = {}): Promise<DoctorReport> {
+  const resolved = await loadValidatedConfig(options.config)
+  const config = applyExecutionOverrides(resolved.config, {
+    version: options.version,
+    desc: options.desc,
+    notify: options.notify,
+  })
+  const env = options.env || 'prod'
+  const version = await resolveVersion(config.version)
+  const description = await resolveDescription(config.description)
+  const platforms = resolveEnabledPlatforms(config, options.platforms)
+
+  return buildDoctorReport({
+    config,
+    configPath: resolved.filepath,
+    env,
+    version,
+    description,
+    platforms,
+  })
 }

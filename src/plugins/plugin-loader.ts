@@ -55,11 +55,12 @@ const BUILT_IN_PLUGINS: Record<string, () => Promise<{ default: Plugin } | Plugi
 export async function loadPlugins(
   pluginConfigs: PluginConfig[],
   hookManager: HookManager,
+  baseDir: string = process.cwd(),
 ): Promise<void> {
   for (const pluginConfig of pluginConfigs) {
     try {
       // 加载插件模块
-      const plugin = await resolvePlugin(pluginConfig)
+      const plugin = await resolvePlugin(pluginConfig, baseDir)
 
       // 调用插件的 apply 方法，传入 HookManager
       plugin.apply(hookManager)
@@ -84,7 +85,10 @@ export async function loadPlugins(
  * @returns 加载后的插件对象
  * @throws 当插件文件不存在或导出格式不正确时抛出错误
  */
-async function resolvePlugin(config: PluginConfig): Promise<Plugin> {
+async function resolvePlugin(
+  config: PluginConfig,
+  baseDir: string,
+): Promise<Plugin> {
   const { use, options } = config
 
   // ─── 情况 1：内置插件 ──────────────────────────────────────────
@@ -95,7 +99,7 @@ async function resolvePlugin(config: PluginConfig): Promise<Plugin> {
 
   // ─── 情况 2：本地文件路径（以 ./ 或 ../ 开头） ─────────────────
   if (use.startsWith('./') || use.startsWith('../')) {
-    const absolutePath = resolve(process.cwd(), use)
+    const absolutePath = resolve(baseDir, use)
     const mod = await import(absolutePath)
     return extractPlugin(mod, options)
   }

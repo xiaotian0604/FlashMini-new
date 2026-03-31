@@ -25,7 +25,8 @@ export function buildDingtalkMessage(
   atMobiles: string[] = [],
 ): Record<string, unknown> {
   // 分类上传结果
-  const successPlatforms = ctx.results.filter(r => r.success).map(r => r.platform)
+  const successPlatforms = ctx.results.filter(r => r.success && !r.mock).map(r => r.platform)
+  const mockPlatforms = ctx.results.filter(r => r.success && r.mock).map(r => r.platform)
   const failedPlatforms = ctx.failedPlatforms
 
   // 构建 Markdown 内容
@@ -40,6 +41,9 @@ export function buildDingtalkMessage(
   // 平台状态
   if (successPlatforms.length > 0) {
     lines.push(`**成功**: ${successPlatforms.map(p => `✅ ${p}`).join(' ')}`)
+  }
+  if (mockPlatforms.length > 0) {
+    lines.push(`**模拟**: ${mockPlatforms.map(p => `🧪 ${p}`).join(' ')}`)
   }
   if (failedPlatforms.length > 0) {
     lines.push(`**失败**: ${failedPlatforms.map(p => `❌ ${p}`).join(' ')}`)

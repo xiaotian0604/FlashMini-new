@@ -55,7 +55,8 @@ export function buildFeishuCard(
   } = templateConfig
 
   // 分类上传结果
-  const successPlatforms = ctx.results.filter(r => r.success).map(r => r.platform)
+  const successPlatforms = ctx.results.filter(r => r.success && !r.mock).map(r => r.platform)
+  const mockPlatforms = ctx.results.filter(r => r.success && r.mock).map(r => r.platform)
   const failedPlatforms = ctx.failedPlatforms
 
   // 根据是否有失败平台决定卡片主题色
@@ -83,6 +84,7 @@ export function buildFeishuCard(
   if (showPlatforms) {
     const statusLines = [
       ...successPlatforms.map(p => `✅ ${p}`),
+      ...mockPlatforms.map(p => `🧪 ${p}（模拟）`),
       ...failedPlatforms.map(p => `❌ ${p}`),
     ]
 

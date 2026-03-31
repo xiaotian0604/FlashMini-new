@@ -66,7 +66,9 @@ export function printSummary(ctx: Context): void {
 
     // 根据上传结果设置状态文字和颜色
     const status = result.success
-      ? chalk.green('✅ 成功')
+      ? result.mock
+        ? chalk.cyan('🧪 模拟成功')
+        : chalk.green('✅ 成功')
       : chalk.red('❌ 失败')
 
     // 格式化耗时（毫秒转秒，保留一位小数）
@@ -89,6 +91,15 @@ export function printSummary(ctx: Context): void {
   if (failCount > 0) {
     console.log(
       chalk.yellow(`  ⚠  ${successCount} 个平台成功，${failCount} 个平台失败`),
+    )
+  }
+
+  const mockResults = ctx.results.filter(result => result.mock)
+  for (const result of mockResults) {
+    const displayName = PLATFORM_DISPLAY_NAMES[result.platform as PlatformNameType]
+      || result.platform
+    console.log(
+      chalk.cyan(`  🧪 ${displayName}: ${result.mockReason || '使用模拟上传'}`),
     )
   }
 

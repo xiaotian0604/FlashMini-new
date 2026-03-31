@@ -83,10 +83,10 @@ function resolveTemplatePath(): string {
   try {
     // ESM 环境：使用 import.meta.url
     const currentDir = dirname(fileURLToPath(import.meta.url))
-    return resolve(currentDir, '../../templates/flashmini.config.ts')
+    return resolve(currentDir, '../../../templates/flashmini.config.ts')
   } catch {
     // CJS 环境：使用 __dirname
-    return resolve(__dirname, '../../templates/flashmini.config.ts')
+    return resolve(__dirname, '../../../templates/flashmini.config.ts')
   }
 }
 
@@ -109,33 +109,40 @@ export default defineConfig({
   description: '',          // 上传备注，支持 "git"（自动读取最近一条 git commit message）
 
   // ─── 平台配置 ────────────────────────────────────────────────
+  // dev 环境下如果缺少真实凭证，会自动降级为模拟上传
   platforms: {
     wechat: {
       enabled: true,
-      appId: 'wx__________',               // 小程序 AppID
-      privateKeyPath: './keys/wechat.key', // 上传密钥路径
+      mock: false,                         // 强制使用模拟上传
+      appId: '',                           // 小程序 AppID（dev 环境留空会自动走 mock）
+      privateKeyPath: '',                  // 上传密钥路径（dev 环境留空会自动走 mock）
       projectPath: './dist/wechat',        // 构建产物目录
       robot: 1,                            // CI 机器人编号（1-30）
     },
 
     alipay: {
       enabled: false,
-      appId: '202100000000',
+      mock: false,
+      appId: '',
       toolId: '',
       privateKey: '',
+      privateKeyPath: '',
       projectPath: './dist/alipay',
     },
 
     baidu: {
       enabled: false,
+      mock: false,
       token: '',
       projectPath: './dist/baidu',
     },
 
     bytedance: {
       enabled: false,
+      mock: false,
       email: '',
       password: '',
+      token: '',
       projectPath: './dist/bytedance',
     },
   },

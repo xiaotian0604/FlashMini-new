@@ -29,10 +29,16 @@ import { z } from 'zod'
 export const WechatSchema = z.object({
   /** 是否启用微信平台上传 */
   enabled: z.boolean().default(false),
-  /** 微信小程序 AppID，必须以 'wx' 开头 */
-  appId: z.string().startsWith('wx', { message: '微信 AppID 必须以 wx 开头' }),
+  /** 是否强制使用模拟上传 */
+  mock: z.boolean().default(false),
+  /** 微信小程序 AppID，缺省时可在 dev 环境自动走模拟上传 */
+  appId: z.string()
+    .default('')
+    .refine(value => value === '' || value.startsWith('wx'), {
+      message: '微信 AppID 必须以 wx 开头',
+    }),
   /** 上传密钥文件路径（从微信公众平台下载） */
-  privateKeyPath: z.string(),
+  privateKeyPath: z.string().default(''),
   /** 构建产物目录路径 */
   projectPath: z.string(),
   /** CI 机器人编号（1-30），不同编号在上传记录中区分来源 */
@@ -49,14 +55,16 @@ export const WechatSchema = z.object({
 export const AlipaySchema = z.object({
   /** 是否启用支付宝平台上传 */
   enabled: z.boolean().default(false),
-  /** 支付宝小程序 AppID */
-  appId: z.string(),
+  /** 是否强制使用模拟上传 */
+  mock: z.boolean().default(false),
+  /** 支付宝小程序 AppID，缺省时可在 dev 环境自动走模拟上传 */
+  appId: z.string().default(''),
   /** 支付宝开放平台工具 ID */
   toolId: z.string().default(''),
   /** 私钥字符串（与 privateKeyPath 二选一） */
   privateKey: z.string().default(''),
   /** 私钥文件路径（与 privateKey 二选一） */
-  privateKeyPath: z.string().optional(),
+  privateKeyPath: z.string().default(''),
   /** 构建产物目录路径 */
   projectPath: z.string(),
 })
@@ -69,8 +77,10 @@ export const AlipaySchema = z.object({
 export const BaiduSchema = z.object({
   /** 是否启用百度平台上传 */
   enabled: z.boolean().default(false),
+  /** 是否强制使用模拟上传 */
+  mock: z.boolean().default(false),
   /** 百度智能小程序上传 token */
-  token: z.string(),
+  token: z.string().default(''),
   /** 构建产物目录路径 */
   projectPath: z.string(),
 })
@@ -83,12 +93,14 @@ export const BaiduSchema = z.object({
 export const BytedanceSchema = z.object({
   /** 是否启用字节跳动平台上传 */
   enabled: z.boolean().default(false),
+  /** 是否强制使用模拟上传 */
+  mock: z.boolean().default(false),
   /** 字节跳动开发者邮箱 */
   email: z.string().default(''),
   /** 字节跳动开发者密码（与 token 二选一） */
   password: z.string().default(''),
   /** 鉴权 token（与 email+password 二选一） */
-  token: z.string().optional(),
+  token: z.string().default(''),
   /** 构建产物目录路径 */
   projectPath: z.string(),
 })

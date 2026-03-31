@@ -20,10 +20,14 @@ export interface UploadResult {
   platform: string
   /** 上传是否成功 */
   success: boolean
+  /** 是否为模拟上传结果 */
+  mock?: boolean
   /** 上传的版本号 */
   version: string
   /** 体验版二维码 URL 或 base64 编码（上传成功时可能返回） */
   qrcodeUrl?: string
+  /** 模拟上传时的触发原因 */
+  mockReason?: string
   /** 上传失败时的错误对象 */
   error?: Error
   /** 上传耗时（毫秒） */

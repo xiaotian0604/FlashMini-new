@@ -38,6 +38,8 @@ import { sendNotifications } from '../notifiers/factory'
 import { retry } from '../utils/retry'
 import { getGitBranch, getGitCommit, getGitLog } from '../utils/git'
 import { resolveVersion, resolveDescription } from '../utils/env'
+import { dirname } from 'path'
+import { resolveEnabledPlatforms } from './platform-selection'
 
 /**
  * Runner 运行选项
@@ -74,12 +76,21 @@ export class Runner {
   /** 经过校验的完整配置对象 */
   private config: FlashminiConfig
 
+  /** 配置文件所在目录，用于解析相对插件路径 */
+  private readonly configDir: string
+
   /**
    * @param config - 经过 Zod 校验的完整配置对象
    */
-  constructor(config: FlashminiConfig) {
+  constructor(
+    config: FlashminiConfig,
+    options: { configFilepath?: string } = {},
+  ) {
     this.config = config
     this.hookManager = new HookManager()
+    this.configDir = options.configFilepath
+      ? dirname(options.configFilepath)
+      : process.cwd()
   }
 
   /**
@@ -96,7 +107,7 @@ export class Runner {
     const ctx = new Context(this.config, options.env)
 
     // ─── 步骤 1：加载插件，注册钩子 ─────────────────────────────
-    await loadPlugins(this.config.plugins, this.hookManager)
+    await loadPlugins(this.config.plugins, this.hookManager, this.configDir)
 
     // ─── 步骤 2：解析版本号和描述 ───────────────────────────────
     ctx.version = await resolveVersion(this.config.version)
@@ -237,16 +248,6 @@ export class Runner {
    * @returns 最终启用的平台名称数组
    */
   private getEnabledPlatforms(cliPlatforms?: string[]): string[] {
-    const platforms = this.config.platforms as Record<string, any>
-
-    // 如果 CLI 指定了平台，只使用指定的平台
-    if (cliPlatforms && cliPlatforms.length > 0) {
-      return cliPlatforms.filter(p => platforms[p])
-    }
-
-    // 否则使用配置文件中 enabled 为 true 的平台
-    return Object.entries(platforms)
-      .filter(([, config]) => config?.enabled)
-      .map(([name]) => name)
+    return resolveEnabledPlatforms(this.config, cliPlatforms)
   }
 }

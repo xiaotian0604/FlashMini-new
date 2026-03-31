@@ -18,6 +18,8 @@ export default defineConfig({
   entry: {
     index: 'src/index.ts',
     cli: 'src/cli/index.ts',
+    'plugins/git-log': 'src/plugins/built-in/git-log.ts',
+    'plugins/version-bump': 'src/plugins/built-in/version-bump.ts',
   },
   // 同时输出 ESM 和 CJS 格式
   format: ['esm', 'cjs'],
